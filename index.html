@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT - PAI dan Budi Pekerti Kelas VIII</title>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Anti-Cheat: Mencegah seleksi teks */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #0891b2; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0e7490; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-cyan-500 to-blue-600 min-h-screen font-sans text-slate-800 antialiased" oncontextmenu="return false;">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const GOOGLE_SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxqv-qSWjO9aPYmKpSPjOsghx7yPCyFdyDm-sbSaKgpO5JCA6HC0ExI2w88kXlSGALg/exec"; // GANTI DENGAN URL WEB APP GAS ANDA
+        const MAPEL = "PENDIDIKAN AGAMA ISLAM DAN BUDI PEKERTI";
+        const KELAS = "VII";
+        const JENIS_UJIAN = "SUMATIF AKHIR JENJANG (SAJ) 2026/2027";
+        const DURASI_MENIT = 90;
+        const STORAGE_KEY = `cbt_${MAPEL.replace(/\s+/g, '_')}_${KELAS}`;
+
+        // ==========================================
+        // 1. DATA SOAL HASIL EKSTRAKSI PDF
+        // ==========================================
+        const rawQuestionsData = [
+            { id: 1, type: 'mc', text: "Al-Qur'an adalah kitab suci umat Islam yang diturunkan kepada Nabi Muhammad saw. Fungsi utama Al-Qur'an bagi kehidupan manusia sesuai Q.S. an-Nahl/16: 64 adalah sebagai...", options: [ { id: 'A', text: "Penghias ruangan rumah dan pelengkap perpustakaan" }, { id: 'B', text: "Petunjuk, pembeda antara yang hak dan batil, serta penjelas bagi manusia" }, { id: 'C', text: "Buku bacaan sastra masa lalu yang wajib dihafalkan semata" }, { id: 'D', text: "Kumpulan kisah kuno tanpa ada hubungannya dengan masa kini" } ], correct: 'B' },
+            { id: 2, type: 'mc', text: "Perhatikan potongan ayat Q.S. an-Nisa'/4: 59 berikut:\nيَأْيُّهَا الَّذِينَ آمَنُوا أَطِيعُوا اللَّهَ وَأَطِيعُوا الرَّسُولَ وَأُولِي الْأَمْرِ مِنْكُمْ\nMakna dari istilah Ulil Amri (أولى الأمر) yang wajib ditaati pada ayat di atas adalah...", options: [ { id: 'A', text: "Para pedagang kaya dan pengusaha sukses" }, { id: 'B', text: "Pemimpin atau pemegang kekuasaan yang sah di antara kamu" }, { id: 'C', text: "Orang tua dan kerabat dekat dalam keluarga" }, { id: 'D', text: "Para sahabat nabi yang telah meninggal dunia" } ], correct: 'B' },
+            { id: 3, type: 'mc', text: "Saat jam pelajaran sekolah berlangsung, Doni dan teman-temannya tetap tertib mematuhi tata tertib sekolah serta mendengarkan arahan dari kepala sekolah dan guru. Sikap Doni dan teman-temannya ini merupakan bentuk pengamalan dari perintah Allah Swt. dalam Q.S. an-Nisa'/4: 59, yaitu...", options: [ { id: 'A', text: "Taat hanya kepada keinginan diri sendiri" }, { id: 'B', text: "Mengikuti saran teman sebaya saja" }, { id: 'C', text: "Taat kepada Allah Swt., Rasul-Nya, dan Ulil Amri (pemimpin)" }, { id: 'D', text: "Mengabaikan peraturan sekolah yang kurang disukai" } ], correct: 'C' },
+            { id: 4, type: 'mc', text: "Hukum bacaan Alif Lam Syamsiyyah (hukum bacaan ال yang dibaca melebur/kemasukan ke huruf berikutnya) terjadi apabila huruf Alif Lam bertemu dengan huruf...", options: [ { id: 'A', text: "Alif, Ba" }, { id: 'B', text: "Syin, Sad" }, { id: 'C', text: "Jim, Kha" }, { id: 'D', text: "Mim, Wau" } ], correct: 'B' },
+            { id: 5, type: 'mc', text: "Pasangan antara lafal dan hukum bacaan tajwid berikut yang BENAR adalah...", options: [ { id: 'A', text: "الشَّمْسُ (as-syamsu) = Alif Lam Qamariyyah" }, { id: 'B', text: "الْقَمَرُ (al-qamaru) = Alif Lam Syamsiyyah" }, { id: 'C', text: "الرَّحْمَنُ (ar-rahmanu) = Alif Lam Syamsiyyah" }, { id: 'D', text: "الْكِتَبُ (al-kitabu) = Alif Lam Syamsiyyah" } ], correct: 'C' },
+            { id: 6, type: 'mc', text: "Perhatikan beberapa contoh lafal berikut:\n(1) الصلوة (as-salatu)\n(2) الْحَمْدُ (al-hamdu)\n(3) النَّاسُ (an-nasu)\n(4) الْعَلِيمُ (al-alimu)\nContoh hukum bacaan Alif Lam Qamariyyah (huruf Alif Lam yang dibaca jelas/terang) ditunjukkan oleh nomor...", options: [ { id: 'A', text: "(1) dan (2)" }, { id: 'B', text: "(1) dan (3)" }, { id: 'C', text: "(2) dan (4)" }, { id: 'D', text: "(3) dan (4)" } ], correct: 'C' },
+            { id: 7, type: 'mc', text: "Hadis Nabi Muhammad saw. memiliki kedudukan sebagai sumber hukum Islam kedua setelah Al-Qur'an. Salah satu fungsi Hadis terhadap Al-Qur'an adalah Bayan Tafsir, yang artinya...", options: [ { id: 'A', text: "Menghapus hukum yang sudah ada di dalam Al-Qur'an" }, { id: 'B', text: "Menjelaskan dan memperinci ayat Al-Qur'an yang masih bersifat umum" }, { id: 'C', text: "Mengganti ayat Al-Qur'an dengan aturan baru" }, { id: 'D', text: "Menolak hukum yang tidak tertulis dalam Al-Qur'an" } ], correct: 'B' },
+            { id: 8, type: 'mc', text: "Apabila terjadi perbedaan pendapat atau perselisihan dalam menentukan suatu hukum di tengah masyarakat, langkah utama yang harus dilakukan oleh seorang muslim sesuai dengan Q.S. an-Nisa'/4: 59 adalah...", options: [ { id: 'A', text: "Mengembalikan permasalahan tersebut kepada petunjuk Al-Qur'an dan Hadis" }, { id: 'B', text: "Menentukan hukum berdasarkan suara terbanyak (voting) tanpa syarat" }, { id: 'C', text: "Membiarkan masalah tersebut larut tanpa penyelesaian" }, { id: 'D', text: "Mengikuti pendapat kelompok yang paling kuat fisiknya" } ], correct: 'A' },
+            { id: 9, type: 'mc', text: "Perilaku berikut yang menunjukkan semangat mencintai dan mengamalkan Al-Qur'an dan Hadis dalam kehidupan sehari-hari adalah...", options: [ { id: 'A', text: "Memajang Al-Qur'an di lemari tanpa pernah dibaca" }, { id: 'B', text: "Membaca Al-Qur'an dengan benar serta berusaha memahami dan mengamalkan isinya" }, { id: 'C', text: "Menggunakan ayat Al-Qur'an untuk menakut-nakuti orang lain" }, { id: 'D', text: "Menghafal Al-Qur'an hanya ketika akan menghadapi ujian sekolah" } ], correct: 'B' },
+            { id: 10, type: 'mc', text: "Hadis atau Sunah Nabi Muhammad saw. secara istilah adalah segala sesuatu yang bersumber dari Nabi Muhammad saw., berupa...", options: [ { id: 'A', text: "Perkataan, perbuatan, dan penetapan (persetujuan) nabi" }, { id: 'B', text: "Cita-cita dan impian pribadi nabi" }, { id: 'C', text: "Pendapat dan pemikiran para sahabat rasul saja" }, { id: 'D', text: "Tradisi nenek moyang bangsa Arab kuno" } ], correct: 'A' },
+            { id: 11, type: 'mc', text: "Al-Asma' al-Husna secara bahasa terdiri dari dua kata yang memiliki arti...", options: [ { id: 'A', text: "Sifat-sifat manusia yang terpuji" }, { id: 'B', text: "Nama-nama Allah Swt. yang paling indah dan agung" }, { id: 'C', text: "Kumpulan doa-doa pilihan para nabi" }, { id: 'D', text: "Ayat-ayat mulia di dalam Al-Qur'an" } ], correct: 'B' },
+            { id: 12, type: 'mc', text: "Allah Swt. memiliki nama indah al-'Alim. Makna dari Asmaul Husna al-'Alim adalah Allah Swt. Maha...", options: [ { id: 'A', text: "Mengetahui segala sesuatu, baik yang tampak maupun yang tersembunyi" }, { id: 'B', text: "Teliti dan cermat terhadap seluruh ciptaan-Nya" }, { id: 'C', text: "Mendengar segala bisikan dan suara di alam semesta" }, { id: 'D', text: "Melihat seluruh perbuatan hamba-Nya tanpa ada batas" } ], correct: 'A' },
+            { id: 13, type: 'mc', text: "Sebelum mengumpulkan lembar jawaban ujian sekolah, Siti selalu memeriksa dan meneliti kembali jawaban soalnya dari nomor satu hingga akhir agar tidak ada yang keliru atau terlewat. Perilaku cermat dan teliti yang ditunjukkan Siti merupakan cerminan dari meneladani Asmaul Husna...", options: [ { id: 'A', text: "al-Basir (Maha Melihat)" }, { id: 'B', text: "al-Sami' (Maha Mendengar)" }, { id: 'C', text: "al-Khabir (Maha Teliti / Waspada)" }, { id: 'D', text: "al-'Alim (Maha Mengetahui)" } ], correct: 'C' },
+            { id: 14, type: 'mc', text: "Bukti nyata dalam kehidupan sehari-hari bahwa Allah Swt. memiliki sifat al-Sami' (السَّمِيعُ) adalah...", options: [ { id: 'A', text: "Allah Swt. mendengar doa dan bisikan hati hamba-Nya walaupun tidak diucapkan keras" }, { id: 'B', text: "Allah Swt. membutuhkan alat bantu mikrofon untuk mendengar suara yang pelan" }, { id: 'C', text: "Allah Swt. hanya mendengar doa yang diucapkan dalam bahasa Arab saja" }, { id: 'D', text: "Allah Swt. mendengar suara manusia jika disampaikan di dalam masjid" } ], correct: 'A' },
+            { id: 15, type: 'mc', text: "Rian berada di dalam kamar yang gelap dan sepi. Meskipun tidak ada orang lain yang melihatnya, Rian tetap tidak mau mengambil uang milik adiknya karena ia yakin Allah Swt. bersifat al-Basir. Hal ini menunjukkan pemahaman bahwa Allah Swt...", options: [ { id: 'A', text: "Mengawasi dan melihat seluruh perbuatan hamba-Nya di mana pun berada" }, { id: 'B', text: "Hanya melihat perbuatan manusia saat berada di tempat terang" }, { id: 'C', text: "Memerlukan bantuan malaikat untuk melihat benda yang kecil" }, { id: 'D', text: "Hanya melihat ibadah yang dilakukan di tempat umum" } ], correct: 'A' },
+            { id: 16, type: 'mc', text: "Perilaku siswa di sekolah yang mencerminkan keteladanan terhadap Asmaul Husna al-'Alim (Maha Mengetahui) adalah...", options: [ { id: 'A', text: "Malas belajar karena merasa sudah paling pintar" }, { id: 'B', text: "Semangat menuntut ilmu dan gemar membaca buku pengetahuan" }, { id: 'C', text: "Menyimpan ilmu untuk diri sendiri dan pelit berbagi penjelasan kepada teman" }, { id: 'D', text: "Menyontek jawaban teman saat ujian berlangsung" } ], correct: 'B' },
+            { id: 17, type: 'mc', text: "Perhatikan pasangan Asmaul Husna dan contoh perilakunya berikut:\n(1) al-'Alim -> Rajin belajar dan menuntut ilmu pengetahuan\n(2) al-Khabir -> Ceroboh dan terburu-buru dalam mengerjakan tugas\n(3) al-Sami' -> Menjaga lisan dari perkataan kotor dan menyakiti orang lain\n(4) al-Basir -> Malu berbuat dosa meskipun sedang sendirian\nPasangan yang TEPAT antara Asmaul Husna dan cerminan perilakunya ditunjukkan oleh nomor...", options: [ { id: 'A', text: "(1), (2), dan (3)" }, { id: 'B', text: "(1), (3), dan (4)" }, { id: 'C', text: "(2), (3), dan (4)" }, { id: 'D', text: "(1), (2), dan (4)" } ], correct: 'B' },
+            { id: 18, type: 'mc', text: "Sifat Allah Swt al-Khabir mengandung makna bahwa Allah Swt. Maha...", options: [ { id: 'A', text: "Mendengar suara yang paling halus" }, { id: 'B', text: "Teliti, cermat, dan mengetahui perkara yang tersembunyi hingga detailnya" }, { id: 'C', text: "Melihat benda yang sangat kecil di kegelapan" }, { id: 'D', text: "Mengetahui hal-hal yang bersifat umum saja" } ], correct: 'B' },
+            { id: 19, type: 'mc', text: "Ketika seorang muslim meyakini secara mendalam bahwa Allah Swt. memiliki sifat al-Sami' dan al-Basir, maka dampak positif yang paling utama terhadap pembentukan karakter pribadinya adalah...", options: [ { id: 'A', text: "Menjadi pribadi yang suka dipuji oleh orang lain saat beribadah" }, { id: 'B', text: "Merasa takut berlebihan sehingga tidak berani berinteraksi dengan orang lain" }, { id: 'C', text: "Memiliki dorongan mawas diri (kontrol diri) dan senantiasa berbuat baik" }, { id: 'D', text: "Selalu mencurigai dan mencari-cari kesalahan orang lain" } ], correct: 'C' },
+            { id: 20, type: 'mc', text: "Cara meneladani Asmaul Husna al-Sami' dalam kehidupan bermasyarakat sehari-hari adalah...", options: [ { id: 'A', text: "Mendengarkan nasihat kebaikan dan menjadi pendengar yang baik bagi sesama" }, { id: 'B', text: "Mendengarkan pembicaraan rahasia orang lain secara sembunyi-sembunyi" }, { id: 'C', text: "Menyebarkan berita yang belum pasti kebenarannya" }, { id: 'D', text: "Pura-pura tidak mendengar ketika dipanggil oleh orang tua" } ], correct: 'A' },
+            { id: 21, type: 'mc', text: "Secara bahasa (etimologi), kata Salat (الصلوة) memiliki arti...", options: [ { id: 'A', text: "Meminta bantuan atau pertolongan" }, { id: 'B', text: "Doa atau memohon kebaikan" }, { id: 'C', text: "Mengingat sesuatu perkara" }, { id: 'D', text: "Membaca bacaan suci" } ], correct: 'B' },
+            { id: 22, type: 'mc', text: "Menurut firman Allah Swt. dalam Q.S. al-'Ankabut/29: 45, salah satu keutamaan utama dari melaksanakan salat dengan benar dan khusyuk adalah...", options: [ { id: 'A', text: "Mencegah diri dari perbuatan keji dan munkar (tercela)" }, { id: 'B', text: "Mendapatkan pujian dan penghormatan dari orang lain" }, { id: 'C', text: "Memperoleh kekayaan harta benda yang melimpah" }, { id: 'D', text: "Menghilangkan seluruh kewajiban belajar di sekolah" } ], correct: 'A' },
+            { id: 23, type: 'mc', text: "Pengertian Zikir (ذِكْرُ اللَّهِ) secara istilah adalah...", options: [ { id: 'A', text: "Berpikir keras tentang ilmu pengetahuan" }, { id: 'B', text: "Mengingat dan menyebut nama Allah Swt. untuk mendekatkan diri kepada-Nya" }, { id: 'C', text: "Mengenang masa lalu bersama teman-teman" }, { id: 'D', text: "Membaca buku cerita hingga tertidur" } ], correct: 'B' },
+            { id: 24, type: 'mc', text: "Ahmad selalu mendirikan salat lima waktu secara khusyuk dan tepat waktu. Di sekolah, meskipun ada kesempatan untuk menyontek tanpa ketahuan guru, Ahmad memilih jujur dan tidak mau menyontek. Hubungan antara ibadah salat Ahmad dengan perilakunya tersebut adalah...", options: [ { id: 'A', text: "Salat Ahmad tidak memberikan pengaruh pada tingkah lakunya" }, { id: 'B', text: "Salat yang dilakukan dengan khusyuk mampu membentengi diri dari perbuatan tidak terpuji" }, { id: 'C', text: "Ahmad hanya takut dimarahi orang tuanya jika nilainya jelek" }, { id: 'D', text: "Ahmad ingin dipuji sebagai siswa paling jujur di kelas" } ], correct: 'B' },
+            { id: 25, type: 'mc', text: "Keadaan hati yang tenang, fokus, penuh kesadaran, serta kepasrahan diri kepada Allah Swt. saat melaksanakan ibadah salat dinamakan...", options: [ { id: 'A', text: "Istikamah (konsisten)" }, { id: 'B', text: "Khusyu' (fokus dan tenang)" }, { id: 'C', text: "Tawakal (berserah diri)" }, { id: 'D', text: "Tasamuh (toleransi)" } ], correct: 'B' },
+            { id: 26, type: 'mc', text: "Sikap Istikamah (konsisten) dalam mengamalkan salat lima waktu ditunjukkan dengan cara...", options: [ { id: 'A', text: "Salat hanya ketika badan terasa sehat dan senggang saja" }, { id: 'B', text: "Salat jika diperintah oleh guru atau orang tua saja" }, { id: 'C', text: "Salat secara kontinu (terus-menerus) dan tepat waktu dalam segala keadaan" }, { id: 'D', text: "Menggabungkan salat 5 waktu sekaligus di malam hari agar praktis" } ], correct: 'C' },
+            { id: 27, type: 'mc', text: "Salah satu hikmah utama dari membiasakan zikir setelah selesai melaksanakan salat fardhu adalah...", options: [ { id: 'A', text: "Membuat pikiran menjadi tegang dan cemas" }, { id: 'B', text: "Hati menjadi tenang, tenteram, dan senantiasa merasa dekat dengan Allah Swt." }, { id: 'C', text: "Menghabiskan waktu luang yang membosankan" }, { id: 'D', text: "Memperlambat penyelesaian tugas sekolah" } ], correct: 'B' },
+            { id: 28, type: 'mc', text: "Perhatikan beberapa manfaat salat dan zikir berikut:\n(1) Melatih kedisiplinan waktu dan kebersihan diri\n(2) Menimbulkan rasa sombong karena merasa paling suci\n(3) Memberikan ketenangan jiwa dan kedamaian hati\n(4) Membentengi diri dari perbuatan dosa dan maksiat\nManfaat yang BENAR dari melaksanakan salat dan zikir ditunjukkan oleh nomor...", options: [ { id: 'A', text: "(1), (2), dan (3)" }, { id: 'B', text: "(1), (3), dan (4)" }, { id: 'C', text: "(2), (3), dan (4)" }, { id: 'D', text: "(1), (2), dan (4)" } ], correct: 'B' },
+            { id: 29, type: 'mc', text: "Mengapa seseorang yang mengaku rajin salat tetapi masih sering melakukan perbuatan tercela (seperti berbohong atau mencuri) dikatakan belum menghayati makna salatnya?", options: [ { id: 'A', text: "Karena salatnya otomatis batal dan harus diulang wudunya" }, { id: 'B', text: "Karena salatnya baru sebatas gerakan fisik tanpa disertai kekhusyukan dan penghayatan hati" }, { id: 'C', text: "Karena salat yang dilakukan kurang dari lima kali sehari" }, { id: 'D', text: "Karena tempat salatnya tidak menghadap kiblat" } ], correct: 'B' },
+            { id: 30, type: 'mc', text: "Bacaan zikir Tasbih yang diucapkan sesudah salat fardhu beserta artinya yang tepat adalah...", options: [ { id: 'A', text: "سُبْحن الله (Subhanallah) = Maha Suci Allah" }, { id: 'B', text: "الْحَمْدُ لِلَّهِ (Alhamdulillah) = Allah Maha Besar" }, { id: 'C', text: "اللَّهُ أَكْبَرُ (Allahu Akbar) = Maha Suci Allah" }, { id: 'D', text: "أَسْتَغْفِرُ اللهَ (Astaghfirullah) = Segala puji bagi Allah" } ], correct: 'A' },
+            { id: 31, type: 'mc', text: "Sujud yang dilakukan sebagai ungkapan rasa syukur dan terima kasih kepada Allah Swt. atas nikmat yang diperoleh atau karena terhindar dari musibah dinamakan sujud...", options: [ { id: 'A', text: "Sujud Sahwi" }, { id: 'B', text: "Sujud Syukur" }, { id: 'C', text: "Sujud Tilawah" }, { id: 'D', text: "Sujud Rukun" } ], correct: 'B' },
+            { id: 32, type: 'mc', text: "Ketika imam sedang memimpin salat Zuhur pada rakaat kedua, imam lupa tidak melakukan Tasyahud Awal dan langsung berdiri ke rakaat ketiga. Sebelum mengakhiri salat dengan salam, imam dan makmum disyariatkan melakukan...", options: [ { id: 'A', text: "Sujud Syukur sebanyak 1 kali di luar salat" }, { id: 'B', text: "Sujud Sahwi sebanyak 2 kali sebelum salam" }, { id: 'C', text: "Sujud Tilawah sebanyak 1 kali setelah salam" }, { id: 'D', text: "Mengulang kembali salat dari awal rakaat" } ], correct: 'B' },
+            { id: 33, type: 'mc', text: "Sebab utama disyariatkannya pelaksanaan Sujud Tilawah adalah karena...", options: [ { id: 'A', text: "Membaca atau mendengar ayat-ayat Sajdah di dalam Al-Qur'an" }, { id: 'B', text: "Mendapatkan kabar gembira lulus ujian sekolah" }, { id: 'C', text: "Ragu-ragu terhadap jumlah rakaat salat yang sedang dikerjakan" }, { id: 'D', text: "Terlupa tidak membaca surat pendek setelah Al-Fatihah" } ], correct: 'A' },
+            { id: 34, type: 'mc', text: "Jumlah sujud yang dilakukan pada saat melaksanakan Sujud Sahwi (sujud karena lupa/ragu) adalah...", options: [ { id: 'A', text: "Satu kali sujud" }, { id: 'B', text: "Dua kali sujud" }, { id: 'C', text: "Tiga kali sujud" }, { id: 'D', text: "Empat kali sujud" } ], correct: 'B' },
+            { id: 35, type: 'mc', text: "Bacaan sujud yang disunahkan saat melakukan Sujud Sahwi adalah...", options: [ { id: 'A', text: "سُبْحَانَ مَنْ لَا يَنَامُ وَلَا يَسْهُو (Subhana man la yanamu wa la yashu)" }, { id: 'B', text: "سُبْحَانَ رَبِّيَ الْأَعْلَى وَبِحَمْدِهِ (Subhana rabbiyal a'la wa bihamdihi)" }, { id: 'C', text: "سَجَدَ وَجْهِي لِلَّذِي خَلَقَهُ وَصَوَّرَهُ (Sajada wajhiya lilladzi khalaqahu wa sawwarahu)" }, { id: 'D', text: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةُ (Rabbana atina fid-dunya hasanah)" } ], correct: 'A' },
+            { id: 36, type: 'mc', text: "Ketentuan tempat dan pelaksanaan Sujud Syukur yang benar menurut ajaran Islam adalah dilakukan...", options: [ { id: 'A', text: "Di dalam salat fardhu sebelum salam" }, { id: 'B', text: "Di luar salat ketika spontan mendapat nikmat atau terhindar dari bahaya" }, { id: 'C', text: "Di dalam salat sunat sesudah gerakan rukuk" }, { id: 'D', text: "Di tengah-tengah khutbah Salat Jumat berlangsung" } ], correct: 'B' },
+            { id: 37, type: 'mc', text: "Perhatikan kondisi-kondisi berikut:\n(1) Terlupa rakaat salat (ragu antara 3 atau 4 rakaat)\n(2) Terhindar dari musibah kecelakaan lalu lintas\n(3) Mendengar bacaan ayat Sajdah saat menyimak Al-Qur'an\n(4) Terlupa tasyahud awal pada salat empat rakaat\nKondisi yang menjadi penyebab disyariatkannya Sujud Sahwi ditunjukkan oleh nomor...", options: [ { id: 'A', text: "(1) dan (2)" }, { id: 'B', text: "(1) dan (4)" }, { id: 'C', text: "(2) dan (3)" }, { id: 'D', text: "(3) dan (4)" } ], correct: 'B' },
+            { id: 38, type: 'mc', text: "Simbol atau tanda khusus yang ada di dalam mushaf Al-Qur'an yang menandakan bahwa ayat tersebut merupakan ayat Sajdah adalah...", options: [ { id: 'A', text: "Tanda simbol kubah kecil / tulisan (Sajdah) di akhir ayat" }, { id: 'B', text: "Simbol angka dalam lingkaran biasa" }, { id: 'C', text: "Tanda waqaf jaiz (ج)" }, { id: 'D', text: "Tanda awal juz Al-Qur'an" } ], correct: 'A' },
+            { id: 39, type: 'mc', text: "Perbedaan mendasar antara Sujud Sahwi, Sujud Syukur, dan Sujud Tilawah dilihat dari waktu dan tempat pelaksanaannya adalah...", options: [ { id: 'A', text: "Sujud Sahwi hanya di luar salat, sedangkan Sujud Syukur dan Tilawah di dalam salat" }, { id: 'B', text: "Sujud Sahwi dilakukan di dalam salat (sebelum/sesudah salam), Sujud Syukur hanya di luar salat, sedangkan Sujud Tilawah bisa di dalam maupun di luar salat" }, { id: 'C', text: "Sujud Syukur dilakukan 2 kali sujud, sedangkan Sujud Sahwi dan Tilawah dilakukan 1 kali sujud" }, { id: 'D', text: "Ketiganya wajib dilakukan secara berjamaah di dalam salat fardhu" } ], correct: 'B' },
+            { id: 40, type: 'mc', text: "Hikmah yang dapat dipetik dari kebiasaan melaksanakan Sujud Syukur dalam kehidupan sehari-hari adalah...", options: [ { id: 'A', text: "Menjadikan diri sombong karena merasa selalu paling beruntung" }, { id: 'B', text: "Menghindarkan diri dari sifat kufur nikmat (mengingkari nikmat) dan melatih kerendahan hati" }, { id: 'C', text: "Memamerkan keberhasilan kepada orang lain" }, { id: 'D', text: "Mendapatkan pujian dan imbalan dari sesama manusia" } ], correct: 'B' },
+            { id: 41, type: 'mc', text: "Daulah Bani Umayyah di Damaskus didirikan oleh seorang sahabat Nabi Muhammad saw. yang bernama...", options: [ { id: 'A', text: "Muawiyah bin Abi Sufyan" }, { id: 'B', text: "Umar bin Abdul Aziz" }, { id: 'C', text: "Abdul Malik bin Marwan" }, { id: 'D', text: "Walid bin Abdul Malik" } ], correct: 'A' },
+            { id: 42, type: 'mc', text: "Pusat pemerintahan dan ibu kota Daulah Bani Umayyah fase pertama berkedudukan di kota...", options: [ { id: 'A', text: "Madinah Munawwarah" }, { id: 'B', text: "Mekah Al-Mukarramah" }, { id: 'C', text: "Damaskus (Suriah)" }, { id: 'D', text: "Baghdad (Irak)" } ], correct: 'C' },
+            { id: 43, type: 'mc', text: "Daulah Bani Umayyah memerintah selama kurang lebih 90 tahun (661-750 M). Sistem kepemimpinan yang diterapkan mengalami perubahan dari masa Khulafaur Rasyidin menjadi sistem...", options: [ { id: 'A', text: "Demokrasi Parlementer" }, { id: 'B', text: "Monarki Herediter (Kerajaan / Keturunan Turun-temurun)" }, { id: 'C', text: "Republik Presidensial" }, { id: 'D', text: "Oligarki Militer" } ], correct: 'B' },
+            { id: 44, type: 'mc', text: "Khalifah Bani Umayyah yang terkenal sangat adil, sederhana, dan teguh memegang kebenaran sehingga sering dijuluki sebagai Khulafaur Rasyidin kelima adalah...", options: [ { id: 'A', text: "Muawiyah bin Abi Sufyan" }, { id: 'B', text: "Walid bin Abdul Malik" }, { id: 'C', text: "Umar bin Abdul Aziz" }, { id: 'D', text: "Marwan bin Hakam" } ], correct: 'C' },
+            { id: 45, type: 'mc', text: "Suatu malam, Khalifah Umar bin Abdul Aziz sedang bekerja menyelesaikan urusan negara di ruang kerjanya menggunakan lampu minyak milik dinas kerajaan. Ketika putranya datang untuk membicarakan urusan pribadi keluarga, Khalifah langsung memadamkan lampu dinas tersebut dan menyalakan lampu minyak pribadinya. Nilai keteladanan utama dari cerita tersebut adalah...", options: [ { id: 'A', text: "Sikap hemat energi di ruang kerja istana" }, { id: 'B', text: "Sikap jujur, amanah, dan tegas memisahkan fasilitas negara dengan kepentingan pribadi" }, { id: 'C', text: "Ketakutan khalifah akan kehabisan bahan bakar minyak" }, { id: 'D', text: "Sikap ketat dalam melarang anak masuk ruang kerja" } ], correct: 'B' },
+            { id: 46, type: 'mc', text: "Salah satu peninggalan kemajuan peradaban Islam masa Bani Umayyah di bidang arsitektur bangunan tempat ibadah yang megah dan terkenal hingga kini adalah...", options: [ { id: 'A', text: "Masjid Agung Umayyah (The Umayyad Mosque) di Damaskus & Masjid Dome of the Rock di Yerusalem" }, { id: 'B', text: "Taj Mahal di Agra India" }, { id: 'C', text: "Masjid Al-Azhar di Kairo Mesir" }, { id: 'D', text: "Masjid Cordoba di Spanyol saja" } ], correct: 'A' },
+            { id: 47, type: 'mc', text: "Pada masa pemerintahan Khalifah Abdul Malik bin Marwan, dilakukan pembaharuan besar dalam sistem administrasi negara, yaitu...", options: [ { id: 'A', text: "Menghapus seluruh bentuk pajak bagi rakyat" }, { id: 'B', text: "Mengganti bahasa resmi administrasi negara menjadi bahasa Arab (Arabisasi) dan mencetak mata uang Islam pertama" }, { id: 'C', text: "Melarang penggunaan bahasa Arab dalam dokumen kerajaan" }, { id: 'D', text: "Menutup hubungan diplomatik dengan negara luar" } ], correct: 'B' },
+            { id: 48, type: 'mc', text: "Lembaga kehakiman pada masa Daulah Bani Umayyah yang bertugas menegakkan hukum dan menyelesaikan perkara peradilan dipimpin oleh seorang pejabat yang disebut...", options: [ { id: 'A', text: "Qadi (Hakim)" }, { id: 'B', text: "Wazir (Menteri)" }, { id: 'C', text: "Amir (Gubernur)" }, { id: 'D', text: "Katib (Sekretaris)" } ], correct: 'A' },
+            { id: 49, type: 'mc', text: "Perhatikan faktor-faktor berikut:\n(1) Stabilitas politik dan keamanan pemerintahan yang kuat\n(2) Semangat perluasan wilayah (dakwah) dan integrasi budaya\n(3) Penguasa yang menutup diri dari perkembangan ilmu pengetahuan\n(4) Pembentukan departemen pemerintahan (Diwan) yang teratur\nFaktor-faktor pendukung kemajuan peradaban Islam pada masa Daulah Bani Umayyah ditunjukkan oleh nomor...", options: [ { id: 'A', text: "(1) dan (3)" }, { id: 'B', text: "(1), (2), dan (3)" }, { id: 'C', text: "(2), (3), dan (4)" }, { id: 'D', text: "(1), (2), dan (4)" } ], correct: 'D' },
+            { id: 50, type: 'mc', text: "Nilai positif dan keteladanan utama dari sejarah kejayaan Daulah Bani Umayyah di Damaskus yang paling tepat diterapkan oleh pelajar muslim saat ini adalah...", options: [ { id: 'A', text: "Mengagungkan kekuasaan kelompok dan keturunan keluarga semata" }, { id: 'B', text: "Semangat tinggi dalam menuntut ilmu, berinovasi, berdisiplin dan membangun peradaban yang bermanfaat bagi kemanusiaan" }, { id: 'C', text: "Membangun kemewahan fisik tanpa memperhatikan nilai karakter" }, { id: 'D', text: "Memusuhi kebudayaan asing tanpa mau mempelajari kelebihannya" } ], correct: 'B' }
+        ];
+
+        // ==========================================
+        // 2. KOMPONEN MURNI & IKON (ANTI-FLICKER)
+        // ==========================================
+        const IconClock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+
+        const CustomModal = ({ title, message, onConfirm, onCancel, confirmText, cancelText, type }) => (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center transform transition-all">
+                    <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {type === 'danger' ? <IconAlert /> : <IconUser />}
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                    <p className="text-gray-600 mb-6 whitespace-pre-line">{message}</p>
+                    <div className="flex gap-3 justify-center">
+                        {onCancel && (
+                            <button onClick={onCancel} className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors">
+                                {cancelText || 'Batal'}
+                            </button>
+                        )}
+                        <button onClick={onConfirm} className={`px-5 py-2.5 rounded-lg font-medium text-white transition-colors ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {confirmText || 'OK'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // Algoritma Fisher-Yates
+        const shuffleArray = (array) => {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
+        const generateShuffledData = () => {
+            let shuffledQuestions = shuffleArray(rawQuestionsData).map(q => {
+                let options = q.options.map(opt => ({ ...opt, isCorrect: opt.id === q.correct }));
+                return { ...q, options: shuffleArray(options) };
+            });
+            return shuffledQuestions;
+        };
+
+        // ==========================================
+        // 3. KOMPONEN UTAMA (APP)
+        // ==========================================
+        function App() {
+            const [screen, setScreen] = React.useState('login');
+            const [userData, setUserData] = React.useState({ name: '', class: '', date: new Date().toISOString().split('T')[0] });
+            const [questions, setQuestions] = React.useState([]);
+            const [answers, setAnswers] = React.useState({});
+            const [currentIndex, setCurrentIndex] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(DURASI_MENIT * 60);
+            const [violations, setViolations] = React.useState(0);
+            const [modal, setModal] = React.useState(null);
+            const [isSubmitting, setIsSubmitting] = React.useState(false);
+            const [finalScore, setFinalScore] = React.useState(null);
+
+            // Cek Data Tersimpan (Resume Sesi)
+            React.useEffect(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && screen === 'login') {
+                    const parsed = JSON.parse(saved);
+                    setModal({
+                        type: 'info',
+                        title: 'Sesi Ujian Ditemukan!',
+                        message: `Kami menemukan sesi ujian yang belum selesai atas nama ${parsed.userData.name}.\nApakah Anda ingin melanjutkannya?`,
+                        confirmText: 'Lanjutkan Ujian',
+                        cancelText: 'Mulai Ulang (Hapus)',
+                        onConfirm: () => {
+                            setUserData(parsed.userData);
+                            setQuestions(parsed.questions);
+                            setAnswers(parsed.answers);
+                            setCurrentIndex(parsed.currentIndex);
+                            setTimeLeft(parsed.timeLeft);
+                            setViolations(parsed.violations);
+                            setScreen('exam');
+                            setModal(null);
+                            document.documentElement.requestFullscreen().catch(()=>{});
+                        },
+                        onCancel: () => {
+                            localStorage.removeItem(STORAGE_KEY);
+                            setModal(null);
+                        }
+                    });
+                }
+            }, []);
+
+            // Auto-Save Real-time
+            React.useEffect(() => {
+                if (screen === 'exam') {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        userData, questions, answers, currentIndex, timeLeft, violations
+                    }));
+                }
+            }, [userData, questions, answers, currentIndex, timeLeft, violations, screen]);
+
+            // Timer Hitung Mundur
+            React.useEffect(() => {
+                if (screen === 'exam' && timeLeft > 0) {
+                    const timerId = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+                    return () => clearTimeout(timerId);
+                } else if (screen === 'exam' && timeLeft <= 0) {
+                    handleAutoSubmit("Waktu ujian telah habis.");
+                }
+            }, [timeLeft, screen]);
+
+            // Strict Anti-Cheat Listeners
+            React.useEffect(() => {
+                if (screen !== 'exam') return;
+
+                const handleVisibility = () => {
+                    if (document.hidden) registerViolation('Meninggalkan tab ujian (Pindah Tab).');
+                };
+                
+                const handleFullscreen = () => {
+                    if (!document.fullscreenElement) registerViolation('Keluar dari mode Fullscreen.');
+                };
+
+                const preventCopy = (e) => e.preventDefault();
+
+                document.addEventListener("visibilitychange", handleVisibility);
+                document.addEventListener("fullscreenchange", handleFullscreen);
+                document.addEventListener("copy", preventCopy);
+                document.addEventListener("cut", preventCopy);
+                
+                return () => {
+                    document.removeEventListener("visibilitychange", handleVisibility);
+                    document.removeEventListener("fullscreenchange", handleFullscreen);
+                    document.removeEventListener("copy", preventCopy);
+                    document.removeEventListener("cut", preventCopy);
+                };
+            }, [screen, violations]);
+
+            const registerViolation = (reason) => {
+                const newCount = violations + 1;
+                setViolations(newCount);
+                if (newCount === 1) {
+                    setModal({
+                        type: 'danger',
+                        title: 'PERINGATAN KERAS!',
+                        message: `Pelanggaran Terdeteksi: ${reason}\n\nIni adalah peringatan pertama dan terakhir. Jika Anda mengulangi pelanggaran, ujian akan dihentikan paksa dan nilai dikirim otomatis!`,
+                        confirmText: 'Saya Mengerti',
+                        onConfirm: () => {
+                            setModal(null);
+                            document.documentElement.requestFullscreen().catch(()=>{});
+                        }
+                    });
+                } else if (newCount >= 2) {
+                    setModal(null);
+                    handleAutoSubmit("Ujian dihentikan paksa karena melakukan 2x pelanggaran.");
+                }
+            };
+
+            const startExam = (e) => {
+                e.preventDefault();
+                if(!userData.name || !userData.class) return;
+                setQuestions(generateShuffledData());
+                setScreen('exam');
+                document.documentElement.requestFullscreen().catch(()=>{});
+            };
+
+            const formatTime = (seconds) => {
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = seconds % 60;
+                return `${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            };
+
+            const buildRincianJawaban = () => {
+                let rincianArr = [];
+                let correctCount = 0;
+                
+                // Urutkan kembali berdasarkan ID asli
+                const sortedQ = [...questions].sort((a,b) => a.id - b.id);
+                
+                sortedQ.forEach((q) => {
+                    const ansId = answers[q.id];
+                    if (!ansId) {
+                        rincianArr.push(`Soal ${q.id}: KOSONG`);
+                    } else {
+                        const chosenOpt = q.options.find(o => o.id === ansId);
+                        if (chosenOpt && chosenOpt.isCorrect) {
+                            rincianArr.push(`Soal ${q.id}: BENAR`);
+                            correctCount++;
+                        } else {
+                            rincianArr.push(`Soal ${q.id}: SALAH (Pilih: ${ansId}, Kunci: ${q.correct})`);
+                        }
+                    }
+                });
+                
+                const score = (correctCount / rawQuestionsData.length) * 100;
+                return { rincianText: rincianArr.join(" | "), score: Math.round(score) };
+            };
+
+            const submitToServer = async (reason) => {
+                setIsSubmitting(true);
+                const { rincianText, score } = buildRincianJawaban();
+                setFinalScore(score);
+                
+                const payload = {
+                    waktuSubmit: new Date().toLocaleString('id-ID'),
+                    nama: userData.name,
+                    kelas: userData.class,
+                    tanggal: userData.date,
+                    skor: score,
+                    pelanggaran: violations,
+                    keterangan: reason || "Selesai Normal",
+                    rincianJawaban: rincianText
+                };
+
+                try {
+                    await fetch(GOOGLE_SHEETS_WEB_APP_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Penting untuk bypass CORS ke script google
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (error) {
+                    console.error("Gagal mengirim data:", error);
+                }
+
+                localStorage.removeItem(STORAGE_KEY);
+                if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(()=>{});
+                }
+                setScreen('finished');
+                setIsSubmitting(false);
+                setModal(null);
+            };
+
+            const handleAutoSubmit = (reason) => {
+                submitToServer(reason);
+            };
+
+            const promptSelesai = () => {
+                const unans = questions.length - Object.keys(answers).length;
+                let msg = unans > 0 
+                    ? `Masih ada ${unans} soal yang belum dijawab.\nApakah Anda yakin ingin mengumpulkan ujian sekarang?`
+                    : "Anda telah menjawab seluruh soal.\nYakin ingin menyelesaikan ujian?";
+                    
+                setModal({
+                    type: 'info',
+                    title: 'Konfirmasi Selesai',
+                    message: msg,
+                    confirmText: 'Ya, Kumpulkan',
+                    cancelText: 'Kembali Ujian',
+                    onConfirm: () => submitToServer("Selesai Normal"),
+                    onCancel: () => setModal(null)
+                });
+            };
+
+            // ================== RENDER LOGIN ==================
+            if (screen === 'login') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        {modal && <CustomModal {...modal} />}
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                            <div className="bg-slate-900 p-8 text-center text-white">
+                                <h1 className="text-2xl font-bold mb-1">{MAPEL}</h1>
+                                <p className="text-cyan-400 font-medium">{JENIS_UJIAN} - KELAS {KELAS}</p>
+                            </div>
+                            <form onSubmit={startExam} className="p-8 space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Lengkap Siswa</label>
+                                    <input required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 outline-none transition-all" value={userData.name} onChange={e => setUserData({...userData, name: e.target.value})} placeholder="Masukkan nama lengkap..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Kelas</label>
+                                    <input required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 outline-none transition-all" value={userData.class} onChange={e => setUserData({...userData, class: e.target.value})} placeholder="Contoh: VIII-A" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tanggal Ujian</label>
+                                    <input required type="date" className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 outline-none transition-all" value={userData.date} onChange={e => setUserData({...userData, date: e.target.value})} />
+                                </div>
+                                <button type="submit" className="w-full mt-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all transform active:scale-95 text-lg">
+                                    Mulai Ujian Sekarang
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ================== RENDER EXAM ==================
+            if (screen === 'exam') {
+                const currentQ = questions[currentIndex];
+                return (
+                    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+                        {modal && <CustomModal {...modal} />}
+                        {isSubmitting && (
+                            <div className="fixed inset-0 bg-white/80 backdrop-blur z-[9999] flex flex-col items-center justify-center">
+                                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cyan-600 mb-4"></div>
+                                <h2 className="text-xl font-bold text-gray-800">Menyimpan dan Menilai...</h2>
+                            </div>
+                        )}
+                        
+                        {/* HEADER */}
+                        <header className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center shrink-0">
+                            <div>
+                                <h1 className="font-bold text-lg text-slate-800 hidden md:block">{MAPEL}</h1>
+                                <p className="text-sm text-cyan-600 font-semibold">{userData.name} • {userData.class}</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold ${timeLeft < 300 ? 'bg-red-100 text-red-600' : 'bg-cyan-100 text-cyan-800'}`}>
+                                    <IconClock /> {formatTime(timeLeft)}
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* MAIN CONTENT */}
+                        <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                            {/* SOAL AREA */}
+                            <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
+                                <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                                    <div className="flex items-start gap-4 mb-6">
+                                        <div className="bg-cyan-600 text-white font-bold h-10 w-10 shrink-0 flex items-center justify-center rounded-lg text-lg">
+                                            {currentIndex + 1}
+                                        </div>
+                                        <div className="text-lg md:text-xl text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                            {currentQ.text}
+                                            {currentQ.image && (
+                                                <img src={currentQ.image} alt="Soal" className="mt-4 max-w-full rounded border" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* OPSI JAWABAN */}
+                                    <div className="space-y-3 mt-8">
+                                        {currentQ.options.map((opt, i) => {
+                                            const isSelected = answers[currentQ.id] === opt.id;
+                                            return (
+                                                <label key={i} className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-cyan-500 bg-cyan-50' : 'border-gray-200 bg-white hover:border-cyan-300 hover:bg-gray-50'}`}>
+                                                    <div className="pt-0.5">
+                                                        <input type="radio" name={`soal-${currentQ.id}`} 
+                                                            className="w-5 h-5 text-cyan-600 focus:ring-cyan-500 border-gray-300"
+                                                            checked={isSelected}
+                                                            onChange={() => setAnswers({...answers, [currentQ.id]: opt.id})}
+                                                        />
+                                                    </div>
+                                                    <span className="text-gray-700 font-medium text-base">{opt.text}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* NAVIGASI BAWAH */}
+                                <div className="max-w-3xl mx-auto mt-6 flex justify-between items-center">
+                                    <button disabled={currentIndex === 0} onClick={() => setCurrentIndex(currentIndex - 1)} className="px-6 py-3 bg-white border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                                        Sebelumnya
+                                    </button>
+                                    
+                                    {currentIndex === questions.length - 1 ? (
+                                        <button onClick={promptSelesai} className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-md transition-transform active:scale-95">
+                                            Selesai & Kumpulkan
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => setCurrentIndex(currentIndex + 1)} className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-semibold shadow-md transition-colors">
+                                            Selanjutnya
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* SIDEBAR NAVIGASI GRID */}
+                            <div className="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l p-6 shrink-0 flex flex-col h-64 lg:h-auto">
+                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <IconUser /> Navigasi Soal
+                                </h3>
+                                <div className="grid grid-cols-5 md:grid-cols-10 lg:grid-cols-5 gap-2 overflow-y-auto pb-4 custom-scrollbar">
+                                    {questions.map((q, idx) => {
+                                        const isAnswered = !!answers[q.id];
+                                        const isActive = currentIndex === idx;
+                                        return (
+                                            <button key={idx} onClick={() => setCurrentIndex(idx)} 
+                                                className={`h-10 w-10 rounded font-bold text-sm transition-all flex items-center justify-center
+                                                ${isAnswered ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                                                ${isActive ? 'ring-4 ring-cyan-300 ring-offset-1 transform scale-110 z-10' : ''}
+                                            `}>
+                                                {idx + 1}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2 text-sm text-gray-600 font-medium">
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-emerald-500 rounded"></div> Sudah Dijawab</div>
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-gray-100 border rounded"></div> Belum Dijawab</div>
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded ring-2 ring-cyan-400 bg-white"></div> Posisi Aktif</div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                );
+            }
+
+            // ================== RENDER FINISHED ==================
+            if (screen === 'finished') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white p-10 rounded-2xl shadow-2xl text-center max-w-md w-full">
+                            <div className="mx-auto w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <h2 className="text-3xl font-extrabold text-gray-800 mb-2">Ujian Selesai!</h2>
+                            <p className="text-gray-600 mb-6">Terima kasih, <b>{userData.name}</b>. Data dan jawaban Anda telah berhasil dikirim ke server sekolah.</p>
+                            
+                            <div className="bg-cyan-50 p-6 rounded-xl border border-cyan-100 mb-8">
+                                <p className="text-sm text-cyan-800 font-semibold mb-1">Skor Akhir Anda</p>
+                                <p className="text-5xl font-black text-cyan-600">{finalScore}</p>
+                            </div>
+
+                            <button onClick={() => window.location.reload()} className="w-full px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors">
+                                Kembali ke Beranda
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
